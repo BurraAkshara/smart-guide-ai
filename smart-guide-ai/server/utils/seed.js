@@ -1,0 +1,238 @@
+/**
+ * Seed script — run with: npm run seed
+ * Populates MongoDB with services catalogue and a demo user.
+ */
+require('dotenv').config()
+const mongoose = require('mongoose')
+const User     = require('../models/User')
+const Service  = require('../models/Service')
+
+const SERVICES_DATA = [
+  {
+    slug: 'income-certificate',
+    name: 'Income Certificate',
+    category: 'Certificates',
+    icon: '💰',
+    description: 'Official certificate proving annual household income issued by the Revenue Department.',
+    processingTime: '7–10 working days',
+    fees: '₹30',
+    popular: true,
+    documents: [
+      'Aadhaar Card (applicant & family)',
+      'Ration Card / Family Card',
+      'Salary slips (last 3 months) or Income Affidavit',
+      'Land records (if applicable)',
+      'Bank passbook (last 6 months)',
+    ],
+    steps: [
+      { title: 'Personal Information', desc: 'Enter your name, DOB, and Aadhaar details.' },
+      { title: 'Family Details',       desc: 'Add family members and their income sources.' },
+      { title: 'Income Declaration',   desc: 'Declare total household income with proof.' },
+      { title: 'Document Upload',      desc: 'Upload scanned copies of required documents.' },
+      { title: 'Review & Submit',      desc: 'Review your application and submit.' },
+    ],
+    formFields: [
+      { name: 'fullName',     label: 'Full Name',      type: 'text',   required: true },
+      { name: 'dob',          label: 'Date of Birth',  type: 'date',   required: true },
+      { name: 'aadhaar',      label: 'Aadhaar Number', type: 'text',   required: true, maxLength: 12 },
+      { name: 'address',      label: 'Address',        type: 'textarea', required: true },
+      { name: 'annualIncome', label: 'Annual Income',  type: 'number', required: true },
+      { name: 'occupation',   label: 'Occupation',     type: 'text',   required: true },
+    ],
+  },
+  {
+    slug: 'caste-certificate',
+    name: 'Caste Certificate',
+    category: 'Certificates',
+    icon: '🏛️',
+    description: 'Certificate verifying caste/community status for educational and government benefits.',
+    processingTime: '15–21 working days',
+    fees: '₹30',
+    popular: true,
+    documents: [
+      'Aadhaar Card',
+      'Ration Card',
+      'Community certificate of parents',
+      'School TC / Birth Certificate',
+      'Nativity Certificate',
+    ],
+    steps: [
+      { title: 'Personal Details',  desc: 'Basic personal information.' },
+      { title: 'Community Details', desc: 'Enter community and sub-caste details.' },
+      { title: 'Family History',    desc: 'Parent community proof details.' },
+      { title: 'Document Upload',   desc: 'Upload supporting documents.' },
+      { title: 'Submit',            desc: 'Final review and submission.' },
+    ],
+    formFields: [
+      { name: 'fullName',   label: 'Full Name',      type: 'text', required: true },
+      { name: 'dob',        label: 'Date of Birth',  type: 'date', required: true },
+      { name: 'aadhaar',    label: 'Aadhaar Number', type: 'text', required: true },
+      { name: 'community',  label: 'Community',      type: 'text', required: true },
+      { name: 'subCaste',   label: 'Sub Caste',      type: 'text', required: false },
+      { name: 'fatherName', label: "Father's Name",  type: 'text', required: true },
+    ],
+  },
+  {
+    slug: 'birth-certificate',
+    name: 'Birth Certificate',
+    category: 'Certificates',
+    icon: '👶',
+    description: 'Official record of birth registered with the Civil Registration System.',
+    processingTime: '3–5 working days',
+    fees: '₹20',
+    popular: true,
+    documents: [
+      'Hospital discharge summary or birth record',
+      'Parents\' Aadhaar cards',
+      'Marriage certificate of parents',
+      'Proof of address',
+    ],
+    steps: [
+      { title: 'Child Details',   desc: 'Name, DOB, and place of birth.' },
+      { title: 'Parent Details',  desc: 'Parent information and IDs.' },
+      { title: 'Hospital Info',   desc: 'Hospital name and details.' },
+      { title: 'Document Upload', desc: 'Upload required documents.' },
+      { title: 'Submit',          desc: 'Review and submit.' },
+    ],
+    formFields: [
+      { name: 'childName',    label: "Child's Full Name", type: 'text', required: true },
+      { name: 'dob',          label: 'Date of Birth',     type: 'date', required: true },
+      { name: 'placeOfBirth', label: 'Place of Birth',    type: 'text', required: true },
+      { name: 'fatherName',   label: "Father's Name",     type: 'text', required: true },
+      { name: 'motherName',   label: "Mother's Name",     type: 'text', required: true },
+      { name: 'hospitalName', label: 'Hospital Name',     type: 'text', required: false },
+    ],
+  },
+  {
+    slug: 'pension-scheme',
+    name: 'Pension Scheme',
+    category: 'Welfare',
+    icon: '👴',
+    description: 'Old age, widow, and disability pension schemes from state social welfare department.',
+    processingTime: '30–45 working days',
+    fees: 'Free',
+    popular: true,
+    documents: [
+      'Age proof (60+ for old age)',
+      'BPL / Income certificate',
+      'Bank passbook',
+      'Aadhaar Card',
+      'Disability certificate (if applicable)',
+    ],
+    steps: [
+      { title: 'Scheme Selection',  desc: 'Choose the pension scheme you qualify for.' },
+      { title: 'Personal Details',  desc: 'Enter personal and family details.' },
+      { title: 'Bank Information',  desc: 'Provide bank account details.' },
+      { title: 'Document Upload',   desc: 'Upload age and income proofs.' },
+      { title: 'Submit',            desc: 'Submit your application.' },
+    ],
+    formFields: [
+      { name: 'fullName',    label: 'Full Name',       type: 'text',   required: true },
+      { name: 'dob',         label: 'Date of Birth',   type: 'date',   required: true },
+      { name: 'aadhaar',     label: 'Aadhaar Number',  type: 'text',   required: true },
+      { name: 'bankAccount', label: 'Bank Account No', type: 'text',   required: true },
+      { name: 'ifsc',        label: 'IFSC Code',       type: 'text',   required: true },
+      { name: 'schemeType',  label: 'Scheme Type',     type: 'select', required: true,
+        options: ['Old Age Pension', 'Widow Pension', 'Disability Pension'] },
+    ],
+  },
+  {
+    slug: 'ration-card',
+    name: 'Ration Card',
+    category: 'ID Services',
+    icon: '🪪',
+    description: 'Essential document for subsidised food grains under the Public Distribution System.',
+    processingTime: '21–30 working days',
+    fees: '₹50',
+    popular: false,
+    documents: [
+      'Aadhaar Card (all family members)',
+      'Address proof',
+      'Income proof',
+      'Recent passport-size photographs',
+    ],
+    steps: [
+      { title: 'Head of Family Details', desc: 'Primary applicant information.' },
+      { title: 'Family Members',         desc: 'Add all family members.' },
+      { title: 'Address Details',        desc: 'Current and permanent address.' },
+      { title: 'Category Selection',     desc: 'Select card type (APL/BPL/AAY).' },
+      { title: 'Document Upload',        desc: 'Upload documents.' },
+    ],
+    formFields: [
+      { name: 'headName',   label: 'Head of Family', type: 'text',    required: true },
+      { name: 'aadhaar',    label: 'Aadhaar Number', type: 'text',    required: true },
+      { name: 'address',    label: 'Address',        type: 'textarea',required: true },
+      { name: 'familySize', label: 'Family Size',    type: 'number',  required: true },
+      { name: 'cardType',   label: 'Card Type',      type: 'select',  required: true,
+        options: ['APL (Above Poverty Line)', 'BPL (Below Poverty Line)', 'AAY (Antyodaya)'] },
+    ],
+  },
+  {
+    slug: 'scholarship',
+    name: 'Scholarship Application',
+    category: 'Education',
+    icon: '🎓',
+    description: 'Government scholarships for SC/ST/OBC/Minority students for higher education.',
+    processingTime: '45–60 working days',
+    fees: 'Free',
+    popular: false,
+    documents: [
+      'Community / Caste certificate',
+      'Income certificate (below ₹2.5 lakh)',
+      'Previous year marksheets',
+      'Admission proof / college ID',
+      'Bank passbook',
+      'Aadhaar Card',
+    ],
+    steps: [
+      { title: 'Personal Details',  desc: 'Basic information and community.' },
+      { title: 'Academic Details',  desc: 'Course, institution, and marks.' },
+      { title: 'Income Details',    desc: 'Family income declaration.' },
+      { title: 'Bank Details',      desc: 'Bank account for scholarship.' },
+      { title: 'Document Upload',   desc: 'Upload certificates and proofs.' },
+    ],
+    formFields: [
+      { name: 'fullName',     label: 'Full Name',              type: 'text',   required: true },
+      { name: 'dob',          label: 'Date of Birth',          type: 'date',   required: true },
+      { name: 'community',    label: 'Community',              type: 'text',   required: true },
+      { name: 'course',       label: 'Course Name',            type: 'text',   required: true },
+      { name: 'institution',  label: 'Institution Name',       type: 'text',   required: true },
+      { name: 'annualIncome', label: 'Family Annual Income',   type: 'number', required: true },
+    ],
+  },
+]
+
+async function seed() {
+  try {
+    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/smart-guide-ai'
+    await mongoose.connect(uri)
+    console.log('✅ Connected to MongoDB')
+
+    // Clear existing data
+    await Service.deleteMany({})
+    await User.deleteMany({ email: 'demo@smartguide.ai' })
+    console.log('🗑️  Cleared existing seed data')
+
+    // Insert services
+    const services = await Service.insertMany(SERVICES_DATA)
+    console.log(`📄 Inserted ${services.length} services`)
+
+    // Create demo user
+    const demo = await User.create({
+      name:     'Demo User',
+      email:    'demo@smartguide.ai',
+      password: 'Demo@1234',
+      language: 'en',
+      role:     'user',
+    })
+    console.log(`👤 Demo user created: ${demo.email} / Demo@1234`)
+
+    console.log('\n✅ Seed complete!\n')
+    process.exit(0)
+  } catch (err) {
+    console.error('❌ Seed failed:', err.message)
+    process.exit(1)
+  }
+}
+
+seed()
